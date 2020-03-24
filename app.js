@@ -62,6 +62,12 @@ app.get('/update', (req, res) => {
     });
 })
 
+app.get('/', (req, res) => {
+    res.json({
+        hello : "and welcome to our database"
+    })
+})
+
 // bind to port 3000
 app.listen('3100', (err) => {
     if(err){
