@@ -1,8 +1,9 @@
 // INCLUDES
-let express = require('express')
+let express     = require('express')
 let mysql      = require('mysql');
-let app = express()
+let app         = express()
 
+const { exec } = require('child_process');
 
 // create connection string
 var connection = mysql.createConnection({
@@ -47,11 +48,25 @@ app.get('/country/:country/state/:state', (req, res) => {
     });
 })
 
-//
-app.listen('3000', (err) => {
+// update the database
+app.get('/update', (req, res) => {
+    exec('node ./actions/loop.js', (error, stdout, stderr) => {
+        if (error) {
+            console.error(`exec error: ${error}`);
+
+            return res.json(error)
+        } else {
+            res.json("done")
+        }
+        console.log(`stdout: ${stdout}`);
+    });
+})
+
+// bind to port 3000
+app.listen('3100', (err) => {
     if(err){
         console.log(err)
     } else {
-        console.log("we in at port", 3000)
+        console.log("we in at port", 3100)
     }
 })

@@ -1,6 +1,7 @@
-const csv = require('csv-parser');
-const fs = require('fs');
-let mysql = require('mysql')
+let csv     = require('csv-parser');
+let fs      = require('fs');
+let mysql   = require('mysql')
+let path    = require('path');
 
 var connection = mysql.createConnection({
   host     : 'localhost',
@@ -10,24 +11,55 @@ var connection = mysql.createConnection({
 });
 
 
+// build the date for today's data
+let today = new Date()
+let day = today.getDate()
+let month = today.getMonth() + 1
+let year = today.getFullYear()
 
-
-
-
-async function drop_table(){
-    let res = await connection.query('DROP TABLE IF EXISTS covid19;')
-    console.log("result is", res)
+if(month < 10) {
+    month = "0" + month
 }
 
-async function create_table(){
-    let res = await connection.query("CREATE TABLE covid19( FIPS INTEGER, CITY VARCHAR(100), STATE VARCHAR(100), COUNTRY VARCHAR(100), LAST_UPDATE DATE, LATITUDE VARCHAR(100), LONGITUDE VARCHAR(100), CONFIRMED INTEGER, DEATHS INTEGER, RECOVERED INTEGER, ACTIVE INTEGER,  COMBINED_KEY VARCHAR(100) );")
-    console.log("result is", res)
+if(day < 10) {
+    day = "0" + day
 }
 
+let date = `${month}-${day}-${year}`
+console.log(date)
+
+
+//date = '03-23-2020'
+
+
+let full_path =  path.resolve( __dirname + `/../COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/${date}.csv`)
+console.log(full_path)
+
+
+try {
+
+    if (fs.existsSync(full_path)) {
+        //file exists
+        console.log("first, latest date available is", date, full_path)
+
+    } else {
+        day = Number(day) - 1
+        date = `${month}-${day}-${year}`
+        full_path =  path.resolve( __dirname + `/../COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/${date}.csv`)
+
+        if (fs.existsSync(full_path)) {
+            console.log("latest date available is", date, full_path)
+        } else {
+            console.log("fatal error, file does not exist")
+        }
+
+    }
+} catch(err) {
+    console.error(err)
+}
 
 let amt = 0;
 let end_amt = 0;
-
 
 
 function query(row, amt){
@@ -35,15 +67,18 @@ function query(row, amt){
 
     connection.query( query , function (error, results, fields) {
         if (error) console.log(error)
-        console.log(row);
-        console.log("RESULT IS", results)
+        //console.log(row);
+        //console.log("RESULT IS", results)
         console.log("amt is", amt)
-        console.log("end amt is", end_amt)
+
         if(amt == end_amt){
+            console.log("end amt is", end_amt)
             connection.end()
         }
     });
 }
+
+
 
 
 
@@ -65,7 +100,7 @@ connection.connect( function(err){
             if(error){ console.log(error); process.exit()}
 
                 // execute order 66
-                fs.createReadStream('data.csv')
+                fs.createReadStream(full_path)
                   .pipe(csv())
                   .on('data', (row) => {
                     // increase amt every iteration (used for self termination)
@@ -73,7 +108,7 @@ connection.connect( function(err){
 
                     if (row.FIPS == undefined || row.Admin2 == undefined || row.Province_State == undefined || row.Country_Region == undefined || row.Last_Update == undefined || row.Lat == undefined ){
                         // do nothing, do not query the value
-                        console.log('row that is dirty data is', row)
+                        //console.log('row that is dirty data is', row)
                         amt--
                     } else {
                         query(row, amt)
