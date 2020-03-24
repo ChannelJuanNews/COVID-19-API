@@ -68,6 +68,12 @@ app.get('/', (req, res) => {
     })
 })
 
+app.get('*', (req, res) => {
+    res.json({
+        error : "idk why but this is an error"
+    })
+})
+
 // bind to port 3000
 app.listen('3100', (err) => {
     if(err){
